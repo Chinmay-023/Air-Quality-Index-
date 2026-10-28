@@ -83,4 +83,4 @@ python src/monitoring/performance_monitor.py
 
 ## Project Limitations & Future Enhancements
 - Currently models use simple time-based splits. Could be enhanced with cross-validation for time series.
-- Add deep learning models (LSTMs) for complex sequence prediction.
+- Add deep learning models (LSTMs) for complex sequence prediction
