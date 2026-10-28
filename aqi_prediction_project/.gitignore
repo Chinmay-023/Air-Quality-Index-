@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Data
+data/raw/*
+data/staging/*
+data/cleaned/*
+data/rejected/*
+data/processed/*
+!data/**/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# MLflow
+mlruns/
+models/
+
+# OS
+.DS_Store

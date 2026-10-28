@@ -1,0 +1,31 @@
+project:
+  name: "Air Quality Index Analysis and Prediction"
+  
+location:
+  city: "Bengaluru"
+  country: "India"
+  latitude: 12.9716
+  longitude: 77.5946
+
+data_collection:
+  openaq:
+    base_url: "https://api.openaq.org/v2"
+    radius_km: 25
+  open_meteo:
+    base_url: "https://api.open-meteo.com/v1/forecast"
+    
+pollutants:
+  - "pm25"
+  - "pm10"
+  - "no2"
+  - "so2"
+  - "co"
+  - "o3"
+
+weather_variables:
+  - "temperature_2m"
+  - "relative_humidity_2m"
+  - "precipitation"
+  - "wind_speed_10m"
+  - "wind_direction_10m"
+  - "surface_pressure"

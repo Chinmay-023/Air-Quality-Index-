@@ -1,0 +1,82 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aqi_db}
+      POSTGRES_USER: ${POSTGRES_USER:-aqi_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aqi_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aqi_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastapi:
+    build: .
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-aqi_db}
+      - POSTGRES_USER=${POSTGRES_USER:-aqi_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aqi_password}
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  streamlit:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://fastapi:8000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-aqi_db}
+      - POSTGRES_USER=${POSTGRES_USER:-aqi_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aqi_password}
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./src:/app/src
+    depends_on:
+      - fastapi
+    command: streamlit run dashboard/app.py --server.address=0.0.0.0
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.6.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+  airflow:
+    image: apache/airflow:2.7.1-python3.10
+    environment:
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-aqi_user}:${POSTGRES_PASSWORD:-aqi_password}@postgres/${POSTGRES_DB:-aqi_db}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-aqi_db}
+      - POSTGRES_USER=${POSTGRES_USER:-aqi_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aqi_password}
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+      - ./src:/opt/airflow/src
+      - ./config:/opt/airflow/config
+      - ./requirements.txt:/opt/airflow/requirements.txt
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: bash -c "pip install -r /opt/airflow/requirements.txt && airflow standalone"
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+  mlflow_data:
